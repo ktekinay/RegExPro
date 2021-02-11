@@ -2,6 +2,10 @@
 Protected Class RegExPro_MTC
 	#tag Method, Flags = &h21
 		Private Sub Compile()
+		  if RePtr <> nil then
+		    Reset
+		  end if
+		  
 		  declare function pcre_compile lib kPCRELib ( pattern as CString, options as Int32, ByRef error as CString, ByRef errorOffset as Int32, useCharTables as ptr) As Ptr
 		  
 		  RePtr = pcre_compile( SearchPattern, 0, ErrorString, ErrorOffset, nil )
@@ -84,6 +88,18 @@ Protected Class RegExPro_MTC
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
+		Private Sub Free(p As Ptr)
+		  #if TargetMacOS or TargetLinux
+		    declare sub free lib kSystemLib (p as ptr)
+		    free( p )
+		    'declare sub pcre_free lib kPCRELib alias "pcre_free" (p as ptr)
+		    'pcre_free( p )
+		  #endif
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
 		Private Sub MaybeRaiseException()
 		  var errorString as string = self.ErrorString
 		  
@@ -108,8 +124,11 @@ Protected Class RegExPro_MTC
 		  end if
 		  
 		  if RePtr <> nil then
-		    declare sub pcre_free lib kPCRELib ( re as ptr )
-		    pcre_free( RePtr )
+		    Free( RePtr )
+		    
+		    'declare sub pcre_free lib kPCRELib ( re as ptr )
+		    'pcre_free( RePtr )
+		    
 		    RePtr = nil
 		  end if
 		  
@@ -314,6 +333,10 @@ Protected Class RegExPro_MTC
 
 	#tag Constant, Name = kPCRELib, Type = String, Dynamic = False, Default = \"", Scope = Private
 		#Tag Instance, Platform = Mac OS, Language = Default, Definition  = \"@executable_path/../Frameworks/pcre_libs/libpcre.1.dylib"
+	#tag EndConstant
+
+	#tag Constant, Name = kSystemLib, Type = String, Dynamic = False, Default = \"", Scope = Private
+		#Tag Instance, Platform = Mac OS, Language = Default, Definition  = \"Foundation"
 	#tag EndConstant
 
 
